@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Espera - Portería</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white p-8">
+  <h1 class="text-4xl font-extrabold mb-8 text-center tracking-tight">Estado de Recepciones</h1>
+  
+  <!-- Contenedor del listado -->
+  <div id="pantallaEspera" class="grid gap-6">
+    <!-- Aquí se inyectan las filas dinámicamente -->
+  </div>
+
+  <script>
+    // Función simulada. En la vida real, llamas a tu GAS vía fetch() cada 30 segundos.
+    const mockData = [
+      { patente: 'XX-1234', oc: 'OC-9001', espera: 15, estado: 'Verde' },
+      { patente: 'YY-5678', oc: 'OC-9005', espera: 35, estado: 'Amarillo' },
+      { patente: 'ZZ-9999', oc: 'OC-8022', espera: 50, estado: 'Rojo' }
+    ];
+
+    function getColorClasses(estado) {
+      switch(estado) {
+        case 'Verde': return 'bg-emerald-500 border-emerald-400 shadow-emerald-500/50';
+        case 'Amarillo': return 'bg-amber-500 border-amber-400 shadow-amber-500/50';
+        case 'Rojo': return 'bg-rose-600 border-rose-500 shadow-rose-600/50 pulse-animation';
+        default: return 'bg-gray-500';
+      }
+    }
+
+    function renderDashboard(data) {
+      const container = document.getElementById('pantallaEspera');
+      container.innerHTML = '';
+      
+      data.forEach(item => {
+        const colors = getColorClasses(item.estado);
+        const card = `
+          <div class="flex items-center justify-between p-6 rounded-lg border-2 shadow-[0_0_15px_rgba(0,0,0,0.5)] ${colors}">
+            <div class="flex flex-col">
+              <span class="text-sm font-bold uppercase tracking-widest opacity-80">Patente</span>
+              <span class="text-4xl font-black">${item.patente}</span>
+            </div>
+            <div class="text-center">
+              <span class="block text-sm font-bold uppercase opacity-80">Orden de Compra</span>
+              <span class="text-2xl font-bold">${item.oc}</span>
+            </div>
+            <div class="text-right">
+              <span class="block text-sm font-bold uppercase opacity-80">Tiempo de Espera</span>
+              <span class="text-4xl font-black">${item.espera} Min</span>
+            </div>
+          </div>
+        `;
+        container.insertAdjacentHTML('beforeend', card);
+      });
+    }
+
+    // Inicializar y setear polling (refresco cada 30 seg)
+    renderDashboard(mockData);
+    // setInterval(() => fetchDataAndRender(), 30000);
+  </script>
+
+  <style>
+    @keyframes pulse-red {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); box-shadow: 0 0 25px rgba(225, 29, 72, 0.8); }
+    }
+    .pulse-animation { animation: pulse-red 2s infinite; }
+  </style>
+</body>
+</html>

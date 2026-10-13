@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check-in Recepción</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-4">
+  <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6 mt-10">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">Registro de Ingreso</h2>
+    
+    <form id="checkinForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Tipo de Ingreso</label>
+        <select id="tipoIngreso" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+          <option value="Agendado">Tengo Cita Agendada</option>
+          <option value="Espontáneo">Sin Cita (Espontáneo)</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Nro Orden de Compra</label>
+        <input type="text" id="nroOC" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">RUT Chofer</label>
+          <input type="text" id="rut" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Patente</label>
+          <input type="text" id="patente" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" required>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">¿Requiere Grúa u otra observación?</label>
+        <textarea id="observaciones" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border"></textarea>
+      </div>
+      <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+        Registrar Llegada
+      </button>
+    </form>
+  </div>
+
+  <script>
+    // Capturar parámetros de la URL si es código QR de cita
+    const urlParams = new URLSearchParams(window.location.search);
+    if(urlParams.has('oc')) document.getElementById('nroOC').value = urlParams.get('oc');
+
+    document.getElementById('checkinForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        tipoIngreso: document.getElementById('tipoIngreso').value,
+        nroOC: document.getElementById('nroOC').value,
+        rutChofer: document.getElementById('rut').value,
+        nombreChofer: "No Especificado", // Podrías añadir el campo
+        patente: document.getElementById('patente').value,
+        observaciones: document.getElementById('observaciones').value,
+        archivoAdjuntoURL: "" // Lógica de subida de archivo va aquí
+      };
+
+      // Aquí va la URL del WebApp publicado en el paso 2
+      const webAppUrl = '10VG-fcipKbyciZnKGlQrjH3DTVEYI90QeY5hpQvr4Co'; 
+      
+      try {
+        const response = await fetch(webAppUrl, {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if(result.status === 'success') {
+          alert('Check-in exitoso. Por favor mire la pantalla de espera.');
+          document.getElementById('checkinForm').reset();
+        }
+      } catch (err) {
+        alert('Error de conexión.');
+      }
+    });
+  </script>
+</body>
+</html>
