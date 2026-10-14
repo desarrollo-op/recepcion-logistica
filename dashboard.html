@@ -15,12 +15,8 @@
   </div>
 
   <script>
-    // Función simulada. En la vida real, llamas a tu GAS vía fetch() cada 30 segundos.
-    const mockData = [
-      { patente: 'XX-1234', oc: 'OC-9001', espera: 15, estado: 'Verde' },
-      { patente: 'YY-5678', oc: 'OC-9005', espera: 35, estado: 'Amarillo' },
-      { patente: 'ZZ-9999', oc: 'OC-8022', espera: 50, estado: 'Rojo' }
-    ];
+    // ¡REEMPLACE ESTA URL POR LA SUYA DE APPS SCRIPT!
+    const webAppUrl = 'https://script.google.com/macros/s/AKfycbwI3yucl41fv6vlmDsr3iNQmPScEAcAAj1el6Afrkxve0mC5i43GQdV9AQhlKZ_mk_1Bw/exec';
 
     function getColorClasses(estado) {
       switch(estado) {
@@ -35,6 +31,11 @@
       const container = document.getElementById('pantallaEspera');
       container.innerHTML = '';
       
+      if(data.length === 0) {
+        container.innerHTML = '<h2 class="text-2xl text-center text-gray-400 mt-10">No hay camiones en espera en este momento. Patio despejado.</h2>';
+        return;
+      }
+
       data.forEach(item => {
         const colors = getColorClasses(item.estado);
         const card = `
@@ -57,9 +58,19 @@
       });
     }
 
-    // Inicializar y setear polling (refresco cada 30 seg)
-    renderDashboard(mockData);
-    // setInterval(() => fetchDataAndRender(), 30000);
+    async function fetchData() {
+      try {
+        const response = await fetch(webAppUrl);
+        const data = await response.json();
+        renderDashboard(data);
+      } catch (error) {
+        console.error("Error obteniendo los datos:", error);
+      }
+    }
+
+    // Ejecutar al cargar la página y luego cada 30 segundos
+    fetchData();
+    setInterval(fetchData, 30000);
   </script>
 
   <style>
