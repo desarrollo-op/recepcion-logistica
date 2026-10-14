@@ -9,13 +9,12 @@
 <body class="bg-slate-900 text-white p-8">
   <h1 class="text-4xl font-extrabold mb-8 text-center tracking-tight">Estado de Recepciones</h1>
   
-  <!-- Contenedor del listado -->
   <div id="pantallaEspera" class="grid gap-6">
     <!-- Aquí se inyectan las filas dinámicamente -->
   </div>
 
   <script>
-    // ¡REEMPLACE ESTA URL POR LA SUYA DE APPS SCRIPT!
+    // ACA VA SU URL DE APPS SCRIPT (MANTENGA LAS COMILLAS)
     const webAppUrl = 'https://script.google.com/macros/s/AKfycbwI3yucl41fv6vlmDsr3iNQmPScEAcAAj1el6Afrkxve0mC5i43GQdV9AQhlKZ_mk_1Bw/exec';
 
     function getColorClasses(estado) {
@@ -27,19 +26,25 @@
       }
     }
 
-function renderDashboard(data) {
+    function renderDashboard(data) {
       const container = document.getElementById('pantallaEspera');
       container.innerHTML = '';
       
+      if(data.length === 0) {
+        container.innerHTML = '<h2 class="text-2xl text-center text-gray-400 mt-10">No hay camiones en espera en este momento. Patio despejado.</h2>';
+        return;
+      }
+
       const ahora = new Date();
 
       data.forEach(item => {
-        // Calculamos los minutos en vivo
         const horaLlegada = new Date(item.espera); 
         const diffMs = ahora - horaLlegada;
-        const minutosEspera = Math.floor(diffMs / 60000);
+        let minutosEspera = Math.floor(diffMs / 60000);
+        
+        // Evitamos números negativos si el servidor tiene desfase
+        if (isNaN(minutosEspera) || minutosEspera < 0) minutosEspera = 0;
 
-        // Recalculamos el semáforo en vivo
         let estadoReal = 'Verde';
         if (minutosEspera > 20) estadoReal = 'Amarillo';
         if (minutosEspera > 45) estadoReal = 'Rojo';
@@ -66,28 +71,6 @@ function renderDashboard(data) {
       });
     }
 
-      data.forEach(item => {
-        const colors = getColorClasses(item.estado);
-        const card = `
-          <div class="flex items-center justify-between p-6 rounded-lg border-2 shadow-[0_0_15px_rgba(0,0,0,0.5)] ${colors}">
-            <div class="flex flex-col">
-              <span class="text-sm font-bold uppercase tracking-widest opacity-80">Patente</span>
-              <span class="text-4xl font-black">${item.patente}</span>
-            </div>
-            <div class="text-center">
-              <span class="block text-sm font-bold uppercase opacity-80">Orden de Compra</span>
-              <span class="text-2xl font-bold">${item.oc}</span>
-            </div>
-            <div class="text-right">
-              <span class="block text-sm font-bold uppercase opacity-80">Tiempo de Espera</span>
-              <span class="text-4xl font-black">${item.espera} Min</span>
-            </div>
-          </div>
-        `;
-        container.insertAdjacentHTML('beforeend', card);
-      });
-    }
-
     async function fetchData() {
       try {
         const response = await fetch(webAppUrl);
@@ -98,9 +81,8 @@ function renderDashboard(data) {
       }
     }
 
-    // Ejecutar al cargar la página y luego cada 30 segundos
     fetchData();
-    setInterval(fetchData, 30000);
+    setInterval(fetchData, 30000); // Refresca cada 30 segundos
   </script>
 
   <style>
