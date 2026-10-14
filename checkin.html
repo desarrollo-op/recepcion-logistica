@@ -79,10 +79,10 @@
         tipoIngreso: document.getElementById('tipoIngreso').value,
         nroOC: document.getElementById('nroOC').value,
         rutChofer: document.getElementById('rut').value,
-        nombreChofer: "No Especificado", // Podrías añadir el campo
+        nombreChofer: document.getElementById('nombreChofer').value,
         patente: document.getElementById('patente').value,
-        observaciones: document.getElementById('observaciones').value,
-        archivoAdjuntoURL: "" // Lógica de subida de archivo va aquí
+        archivoAdjuntoURL: document.getElementById('guiaFactura').value, 
+        observaciones: document.getElementById('observaciones').value
       };
 
       // Aquí va la URL del WebApp publicado en el paso 2
