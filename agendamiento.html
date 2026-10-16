@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agendamiento de Recepción - Compras</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 p-4">
+  <div class="max-w-lg mx-auto bg-white rounded-xl shadow-lg overflow-hidden p-8 mt-10 border-t-4 border-amber-500">
+    <h2 class="text-3xl font-extrabold text-gray-800 mb-2">Agendar Proveedor VIP</h2>
+    <p class="text-gray-500 mb-6">Los proveedores registrados aquí tendrán atención prioritaria en portería.</p>
+    
+    <form id="agendaForm" class="space-y-5">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-semibold text-gray-700">Fecha de Cita</label>
+          <input type="date" id="fecha" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:border-amber-500 focus:ring-amber-500" required>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-700">Hora Aproximada</label>
+          <input type="time" id="hora" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border focus:border-amber-500 focus:ring-amber-500" required>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700">Nombre del Proveedor / Empresa</label>
+        <input type="text" id="proveedor" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border" required>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700">N° Orden de Compra (Clave para la Preferencia)</label>
+        <input type="text" id="nroOC" placeholder="Ej: 97315" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border font-bold text-lg" required>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700">Observaciones para Bodega (Opcional)</label>
+        <textarea id="observaciones" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-3 border"></textarea>
+      </div>
+      <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-lg font-bold text-white bg-amber-500 hover:bg-amber-600">
+        Guardar Agendamiento VIP
+      </button>
+    </form>
+  </div>
+
+  <script>
+    // ACA VA SU URL DE APPS SCRIPT (MANTENGA LAS COMILLAS)
+    const webAppUrl = 'SU_URL_AQUI_ENTRE_COMILLAS'; 
+
+    document.getElementById('agendaForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        formulario: 'agendamiento', // Esta es la llave secreta para el Apps Script
+        fecha: document.getElementById('fecha').value,
+        hora: document.getElementById('hora').value,
+        proveedor: document.getElementById('proveedor').value,
+        nroOC: document.getElementById('nroOC').value,
+        observaciones: document.getElementById('observaciones').value
+      };
+      
+      try {
+        const response = await fetch(webAppUrl, { method: 'POST', body: JSON.stringify(payload) });
+        const result = await response.json();
+        if(result.status === 'success') {
+          alert('¡Proveedor agendado con éxito! Tendrá prioridad en portería.');
+          document.getElementById('agendaForm').reset();
+        }
+      } catch (err) {
+        alert('Error al agendar. Revise su conexión.');
+      }
+    });
+  </script>
+</body>
+</html>
