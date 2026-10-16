@@ -3,25 +3,41 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control de Espera - Portería</title>
+  <title>Control de Espera VIP - Portería</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-white p-8">
-  <h1 class="text-4xl font-extrabold mb-8 text-center tracking-tight">Estado de Recepciones</h1>
   
-  <div id="pantallaEspera" class="grid gap-6">
-    <!-- Aquí se inyectan las filas dinámicamente -->
+  <div class="flex justify-between items-center mb-8">
+    <div class="w-32"></div> <!-- Spacer -->
+    <h1 class="text-5xl font-extrabold text-center tracking-tight">Recepción Logística</h1>
+    <button id="btnAudio" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg transition-all" onclick="iniciarAudio()">
+      🔊 Activar Sonido
+    </button>
   </div>
+  
+  <div id="pantallaEspera" class="grid gap-6"></div>
+
+  <!-- Sonido de alerta tipo timbre de servicio -->
+  <audio id="alertaSonido" src="https://actions.google.com/sounds/v1/doors/doorbell_ring.ogg" preload="auto"></audio>
 
   <script>
-    // ACA VA SU URL DE APPS SCRIPT (MANTENGA LAS COMILLAS)
-    const webAppUrl = 'https://script.google.com/macros/s/AKfycbwI3yucl41fv6vlmDsr3iNQmPScEAcAAj1el6Afrkxve0mC5i43GQdV9AQhlKZ_mk_1Bw/exec';
+    // ACA VA SU URL DE APPS SCRIPT
+    const webAppUrl = 'SU_URL_AQUI_ENTRE_COMILLAS';
+    let audioActivado = false;
+    let vipConocidos = new Set(); // Para no sonar la campana dos veces por el mismo camión
+
+    function iniciarAudio() {
+      audioActivado = true;
+      document.getElementById('alertaSonido').play().catch(e => console.log('Esperando interacción'));
+      document.getElementById('btnAudio').classList.add('hidden'); // Ocultar botón tras activar
+    }
 
     function getColorClasses(estado) {
       switch(estado) {
-        case 'Verde': return 'bg-emerald-500 border-emerald-400 shadow-emerald-500/50';
-        case 'Amarillo': return 'bg-amber-500 border-amber-400 shadow-amber-500/50';
-        case 'Rojo': return 'bg-rose-600 border-rose-500 shadow-rose-600/50 pulse-animation';
+        case 'Verde': return 'bg-emerald-500 border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]';
+        case 'Amarillo': return 'bg-amber-500 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.5)]';
+        case 'Rojo': return 'bg-rose-600 border-rose-500 shadow-[0_0_30px_rgba(225,29,72,0.8)] pulse-animation';
         default: return 'bg-gray-500';
       }
     }
@@ -31,44 +47,64 @@
       container.innerHTML = '';
       
       if(data.length === 0) {
-        container.innerHTML = '<h2 class="text-2xl text-center text-gray-400 mt-10">No hay camiones en espera en este momento. Patio despejado.</h2>';
+        container.innerHTML = '<h2 class="text-4xl text-center text-gray-500 mt-20 font-light">Patio Despejado</h2>';
         return;
       }
 
       const ahora = new Date();
+      let nuevoVipDetectado = false;
+
+      // ORDEN AGRESIVO: Preferencia estricta arriba, luego por tiempo.
+      data.sort((a, b) => {
+        if (a.preferencia && !b.preferencia) return -1;
+        if (!a.preferencia && b.preferencia) return 1;
+        return new Date(a.espera) - new Date(b.espera);
+      });
 
       data.forEach(item => {
+        // Lógica de Sonido
+        if (item.preferencia && !vipConocidos.has(item.idUnico)) {
+          nuevoVipDetectado = true;
+          vipConocidos.add(item.idUnico);
+        }
+
         const horaLlegada = new Date(item.espera); 
         const diffMs = ahora - horaLlegada;
         let minutosEspera = Math.floor(diffMs / 60000);
-        
-        // Evitamos números negativos si el servidor tiene desfase
         if (isNaN(minutosEspera) || minutosEspera < 0) minutosEspera = 0;
 
+        // TIEMPOS ESTRICTOS: Amarillo > 5 min, Rojo > 15 min
         let estadoReal = 'Verde';
-        if (minutosEspera > 20) estadoReal = 'Amarillo';
-        if (minutosEspera > 45) estadoReal = 'Rojo';
+        if (minutosEspera > 5) estadoReal = 'Amarillo';
+        if (minutosEspera > 15) estadoReal = 'Rojo';
 
         const colors = getColorClasses(estadoReal);
+        const preferenciaBadge = item.preferencia ? `<div class="absolute -top-5 -left-5 bg-gradient-to-r from-yellow-300 to-yellow-500 text-black font-black text-xl px-6 py-2 rounded-full shadow-2xl border-4 border-slate-900 transform -rotate-12 z-10 animate-bounce">⭐ PREFERENCIA / CITA</div>` : '';
         
         const card = `
-          <div class="flex items-center justify-between p-6 rounded-lg border-2 shadow-[0_0_15px_rgba(0,0,0,0.5)] ${colors}">
-            <div class="flex flex-col">
-              <span class="text-sm font-bold uppercase tracking-widest opacity-80">Patente</span>
-              <span class="text-4xl font-black">${item.patente}</span>
+          <div class="relative flex items-center justify-between p-8 rounded-2xl border-2 ${colors} transition-all transform hover:scale-[1.01]">
+            ${preferenciaBadge}
+            <div class="flex flex-col ml-6 w-1/4">
+              <span class="text-sm font-bold uppercase tracking-widest opacity-80 text-white drop-shadow-md">Patente</span>
+              <span class="text-5xl font-black text-white drop-shadow-lg">${item.patente}</span>
             </div>
-            <div class="text-center">
-              <span class="block text-sm font-bold uppercase opacity-80">Orden de Compra</span>
-              <span class="text-2xl font-bold">${item.oc}</span>
+            <div class="text-center w-2/4">
+              <span class="block text-sm font-bold uppercase tracking-widest opacity-80 text-white drop-shadow-md">Orden de Compra</span>
+              <span class="text-4xl font-bold text-white drop-shadow-lg">${item.oc}</span>
             </div>
-            <div class="text-right">
-              <span class="block text-sm font-bold uppercase opacity-80">Tiempo de Espera</span>
-              <span class="text-4xl font-black">${minutosEspera} Min</span>
+            <div class="text-right w-1/4">
+              <span class="block text-sm font-bold uppercase tracking-widest opacity-80 text-white drop-shadow-md">Espera</span>
+              <span class="text-6xl font-black text-white drop-shadow-lg">${minutosEspera} <span class="text-2xl">Min</span></span>
             </div>
           </div>
         `;
         container.insertAdjacentHTML('beforeend', card);
       });
+
+      // Si llegó un VIP nuevo y el audio está activado, tocar campana
+      if (nuevoVipDetectado && audioActivado) {
+        document.getElementById('alertaSonido').play().catch(e => console.log('Audio no pudo reproducirse'));
+      }
     }
 
     async function fetchData() {
@@ -77,20 +113,20 @@
         const data = await response.json();
         renderDashboard(data);
       } catch (error) {
-        console.error("Error obteniendo los datos:", error);
+        console.error("Error obteniendo datos:", error);
       }
     }
 
     fetchData();
-    setInterval(fetchData, 30000); // Refresca cada 30 segundos
+    setInterval(fetchData, 15000); // Lo bajé a 15 segundos para que la TV reaccione rápido
   </script>
 
   <style>
     @keyframes pulse-red {
       0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.02); box-shadow: 0 0 25px rgba(225, 29, 72, 0.8); }
+      50% { transform: scale(1.02); box-shadow: 0 0 40px rgba(225, 29, 72, 1); border-color: #fda4af; }
     }
-    .pulse-animation { animation: pulse-red 2s infinite; }
+    .pulse-animation { animation: pulse-red 1.5s infinite; }
   </style>
 </body>
 </html>
