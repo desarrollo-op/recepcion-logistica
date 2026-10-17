@@ -8,29 +8,30 @@
 </head>
 <body class="bg-slate-900 text-white p-8">
   
-  <div class="flex justify-between items-center mb-8">
-    <div class="w-32"></div> <!-- Spacer -->
-    <h1 class="text-5xl font-extrabold text-center tracking-tight">Recepción Logística</h1>
-    <button id="btnAudio" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg transition-all" onclick="iniciarAudio()">
+  <!-- Encabezado con anclaje absoluto para que no salte -->
+  <div class="relative flex justify-center items-center mb-12 h-16">
+    <h1 class="text-5xl font-extrabold text-center tracking-tight absolute">Recepción Logística</h1>
+    <button id="btnAudio" class="absolute right-0 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg transition-all" onclick="iniciarAudio()">
       🔊 Activar Sonido
     </button>
   </div>
   
   <div id="pantallaEspera" class="grid gap-6"></div>
 
-  <!-- Sonido de alerta tipo timbre de servicio -->
   <audio id="alertaSonido" src="https://actions.google.com/sounds/v1/doors/doorbell_ring.ogg" preload="auto"></audio>
 
   <script>
-    // ACA VA SU URL DE APPS SCRIPT
-    const webAppUrl = 'SU_URL_AQUI_ENTRE_COMILLAS';
+    // ACA VA SU URL DE APPS SCRIPT (MANTENGA LAS COMILLAS SIMPLES A LOS LADOS)
+    const webAppUrl = 'https://script.google.com/macros/s/AKfycbwI3yucl41fv6vlmDsr3iNQmPScEAcAAj1el6Afrkxve0mC5i43GQdV9AQhlKZ_mk_1Bw/exec';
+    
     let audioActivado = false;
-    let vipConocidos = new Set(); // Para no sonar la campana dos veces por el mismo camión
+    let vipConocidos = new Set();
 
     function iniciarAudio() {
       audioActivado = true;
       document.getElementById('alertaSonido').play().catch(e => console.log('Esperando interacción'));
-      document.getElementById('btnAudio').classList.add('hidden'); // Ocultar botón tras activar
+      // En vez de esconderlo y romper el diseño, lo hacemos invisible
+      document.getElementById('btnAudio').classList.add('invisible'); 
     }
 
     function getColorClasses(estado) {
@@ -46,7 +47,7 @@
       const container = document.getElementById('pantallaEspera');
       container.innerHTML = '';
       
-      if(data.length === 0) {
+      if(!data || data.length === 0) {
         container.innerHTML = '<h2 class="text-4xl text-center text-gray-500 mt-20 font-light">Patio Despejado</h2>';
         return;
       }
@@ -54,7 +55,6 @@
       const ahora = new Date();
       let nuevoVipDetectado = false;
 
-      // ORDEN AGRESIVO: Preferencia estricta arriba, luego por tiempo.
       data.sort((a, b) => {
         if (a.preferencia && !b.preferencia) return -1;
         if (!a.preferencia && b.preferencia) return 1;
@@ -62,7 +62,6 @@
       });
 
       data.forEach(item => {
-        // Lógica de Sonido
         if (item.preferencia && !vipConocidos.has(item.idUnico)) {
           nuevoVipDetectado = true;
           vipConocidos.add(item.idUnico);
@@ -73,7 +72,6 @@
         let minutosEspera = Math.floor(diffMs / 60000);
         if (isNaN(minutosEspera) || minutosEspera < 0) minutosEspera = 0;
 
-        // TIEMPOS ESTRICTOS: Amarillo > 5 min, Rojo > 15 min
         let estadoReal = 'Verde';
         if (minutosEspera > 5) estadoReal = 'Amarillo';
         if (minutosEspera > 15) estadoReal = 'Rojo';
@@ -101,24 +99,34 @@
         container.insertAdjacentHTML('beforeend', card);
       });
 
-      // Si llegó un VIP nuevo y el audio está activado, tocar campana
       if (nuevoVipDetectado && audioActivado) {
-        document.getElementById('alertaSonido').play().catch(e => console.log('Audio no pudo reproducirse'));
+        document.getElementById('alertaSonido').play().catch(e => console.log('Audio no reproducido'));
       }
     }
 
     async function fetchData() {
       try {
         const response = await fetch(webAppUrl);
+        // Si Google devuelve un error, lo atrapamos aquí en vez de quedar en negro
+        if (!response.ok) throw new Error("Error en la respuesta de Google"); 
+        
         const data = await response.json();
         renderDashboard(data);
       } catch (error) {
         console.error("Error obteniendo datos:", error);
+        // Mostramos el error en pantalla para no adivinar
+        document.getElementById('pantallaEspera').innerHTML = `
+          <div class="bg-red-900 border border-red-500 text-white p-6 rounded-lg max-w-2xl mx-auto mt-10 text-center">
+            <h2 class="text-2xl font-bold mb-2">Error de Conexión</h2>
+            <p>La pantalla no pudo comunicarse con la base de datos.</p>
+            <p class="text-sm text-red-300 mt-4">Verifique que la URL de Apps Script en el código sea correcta y que haya publicado una "Nueva Versión".</p>
+          </div>
+        `;
       }
     }
 
     fetchData();
-    setInterval(fetchData, 15000); // Lo bajé a 15 segundos para que la TV reaccione rápido
+    setInterval(fetchData, 15000); 
   </script>
 
   <style>
